@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Smart Search Floor Manager</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f5f6fb;--ink:#12131f;--mut:#666a80;--glass:rgba(255,255,255,.68);--line:rgba(20,22,50,.09);--g1:#6366f1;--g2:#a855f7;--ok:#15803d;--bad:#d63b41;--soon:#a16207;--rec:#2455e6;--sh:0 10px 34px rgba(40,40,90,.10);padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0a0b12;--ink:#eef0fa;--mut:#9095ad;--glass:rgba(26,28,44,.6);--line:rgba(255,255,255,.09);--ok:#4ade80;--bad:#ff6b70;--soon:#facc15;--rec:#6d9bff;--sh:0 10px 34px rgba(0,0,0,.4)}}
+:root[data-theme="dark"]{--bg:#0a0b12;--ink:#eef0fa;--mut:#9095ad;--glass:rgba(26,28,44,.6);--line:rgba(255,255,255,.09);--ok:#4ade80;--bad:#ff6b70;--soon:#facc15;--rec:#6d9bff;--sh:0 10px 34px rgba(0,0,0,.4)}
+*{box-sizing:border-box;margin:0}
+body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;line-height:1.5}
+body:before{content:"";position:fixed;inset:0;z-index:-1;background:radial-gradient(600px 420px at 8% 0,rgba(99,102,241,.24),transparent),radial-gradient(520px 420px at 96% 18%,rgba(168,85,247,.2),transparent),radial-gradient(520px 420px at 50% 100%,rgba(36,85,230,.14),transparent)}
+button,select,input{font:inherit;color:inherit}button{cursor:pointer}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px}
+.glass{background:var(--glass);backdrop-filter:blur(18px) saturate(1.3);-webkit-backdrop-filter:blur(18px) saturate(1.3);border:1px solid var(--line);border-radius:20px;box-shadow:var(--sh)}
+.top{position:sticky;top:0;z-index:20;margin:12px auto 0;max-width:1180px;padding:10px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;border-radius:16px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:-.02em;margin-right:auto}
+.mark{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,var(--g1),var(--g2));box-shadow:0 4px 14px rgba(99,102,241,.5)}
+.pill,select,.btn{border:1px solid var(--line);background:var(--glass);border-radius:11px;padding:7px 12px;font-size:.88rem}
+.pill{display:inline-flex;align-items:center;gap:7px;font-weight:600}
+.live{width:8px;height:8px;border-radius:50%;background:var(--ok);animation:ring 1.8s infinite}
+@keyframes ring{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--ok) 55%,transparent)}100%{box-shadow:0 0 0 9px transparent}}
+@keyframes up{from{opacity:0;transform:translateY(16px)}}
+@keyframes float{50%{transform:translateY(-9px)}}
+@keyframes sh{to{background-position:-200% 0}}
+.in{animation:up .6s cubic-bezier(.16,1,.3,1) both;animation-delay:calc(var(--i,0)*45ms)}
+.hero{display:grid;grid-template-columns:1.15fr .85fr;gap:28px;align-items:center;padding:52px 0 26px}
+@media(max-width:860px){.hero{grid-template-columns:1fr;padding-top:34px}}
+h1{font-size:clamp(2rem,4.6vw,3.3rem);line-height:1.08;letter-spacing:-.035em;font-weight:800}
+.sub{color:var(--mut);margin:14px 0 22px;max-width:52ch}
+.search{display:flex;gap:8px;padding:8px;border-radius:18px}
+.search input{flex:1;min-width:0;border:0;background:transparent;padding:10px 12px;font-size:1rem;outline:none}
+.go{border:0;border-radius:12px;padding:10px 20px;font-weight:700;color:#fff;background:linear-gradient(135deg,var(--g1),var(--g2));box-shadow:0 6px 18px rgba(99,102,241,.4)}
+.go:hover{filter:brightness(1.08)}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.chip{border:1px solid var(--line);background:var(--glass);border-radius:999px;padding:6px 13px;font-size:.84rem;transition:.2s}
+.chip:hover{transform:translateY(-2px);border-color:var(--g1)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:22px}
+.stat{padding:14px 16px}.stat b{font-size:1.8rem;letter-spacing:-.03em;display:block;line-height:1.1}.stat span{font-size:.82rem;color:var(--mut)}
+.map{padding:18px;animation:float 7s ease-in-out infinite}
+.map h3{font-size:.95rem;margin-bottom:10px}
+.mrow{display:flex;align-items:center;gap:10px;margin:8px 0}.mrow small{width:58px;color:var(--mut);font-size:.75rem}
+.cell{width:26px;height:26px;border-radius:8px;background:color-mix(in srgb,var(--c) 30%,transparent);border:1px solid color-mix(in srgb,var(--c) 70%,transparent)}
+.ok{--c:var(--ok)}.bad{--c:var(--bad)}.soon{--c:var(--soon)}.rec{--c:var(--rec)}
+.cell.ok{animation:ring 2.4s infinite}
+.legend{display:flex;gap:12px;flex-wrap:wrap;margin-top:12px;font-size:.75rem;color:var(--mut)}.legend i{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--c);margin-right:5px}
+.feat{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:8px 0 8px}
+@media(max-width:760px){.feat{grid-template-columns:1fr}}
+.feat div{padding:18px}.feat b{display:block;margin-bottom:4px}.feat span{color:var(--mut);font-size:.9rem}
+section{padding:26px 0}
+h2{font-size:1.4rem;letter-spacing:-.02em;margin-bottom:14px}
+.two{display:grid;grid-template-columns:1.4fr 1fr;gap:16px}@media(max-width:860px){.two{grid-template-columns:1fr}}
+.panel{padding:18px}
+.parsed{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 12px;font-size:.78rem}.parsed span{padding:3px 10px;border-radius:999px;background:color-mix(in srgb,var(--g1) 14%,transparent)}
+.res{padding:14px 16px;margin-bottom:10px;border-left:3px solid var(--rec)}
+.res .r1{display:flex;justify-content:space-between;align-items:center;font-weight:700}
+.conf{font-size:.8rem;padding:3px 10px;border-radius:999px;color:#fff;background:linear-gradient(135deg,var(--g1),var(--g2))}
+.res ul{list-style:none;padding:0;margin-top:6px;color:var(--mut);font-size:.88rem}
+.muted{color:var(--mut);font-size:.9rem}
+.pred{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--line);font-size:.9rem}.pred:last-child{border:0}
+.filters{display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:14px;margin-bottom:18px}
+.filters label{display:flex;align-items:center;gap:6px;font-size:.86rem;color:var(--mut)}
+.floor{margin-bottom:22px}.floor h3{font-size:1rem;margin-bottom:10px;display:flex;align-items:center;gap:10px}.floor h3 small{color:var(--mut);font-weight:500}
+.rooms{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.room{text-align:left;padding:14px;border-radius:16px;border:1px solid color-mix(in srgb,var(--c) 38%,var(--line));background:linear-gradient(160deg,color-mix(in srgb,var(--c) 13%,var(--glass)),var(--glass));backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:var(--sh);transition:transform .25s,box-shadow .25s}
+.room:hover{transform:translateY(-5px) scale(1.015);box-shadow:0 16px 40px color-mix(in srgb,var(--c) 25%,transparent)}
+.room b{display:flex;align-items:center;gap:8px;font-size:1.02rem}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--c)}.ok .dot{animation:ring 2s infinite}
+.room small{display:block;color:var(--c);font-weight:600;margin:2px 0 8px;font-size:.82rem}
+.tags{display:flex;gap:5px;flex-wrap:wrap}.tags span{font-size:.7rem;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--mut)}
+.skel{height:98px;border-radius:16px;background:linear-gradient(90deg,var(--line) 25%,transparent 50%,var(--line) 75%);background-size:200% 100%;animation:sh 1.3s infinite}
+.bars{display:flex;align-items:flex-end;gap:8px;height:120px}.bars div{flex:1;text-align:center;font-size:.68rem;color:var(--mut)}
+.bars i{display:block;border-radius:7px 7px 3px 3px;background:linear-gradient(180deg,var(--g2),var(--g1));min-height:3px;margin-bottom:4px;transition:height .8s}
+.hb{margin:9px 0;font-size:.85rem}.hb i{display:block;height:8px;border-radius:6px;background:linear-gradient(90deg,var(--g1),var(--g2));margin-top:4px}
+.ana{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}@media(max-width:900px){.ana{grid-template-columns:1fr}}
+.mon{grid-column:1/-1}.mh{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:10px;flex-wrap:wrap}.mh div{display:flex;gap:8px;align-items:center}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}.cal .dn{font-size:.72rem;color:var(--mut);text-align:center}
+.cal button,.cal .e{min-height:58px;border-radius:12px;border:1px solid var(--line);padding:6px;text-align:left;font-size:.74rem}
+.cal button{transition:transform .2s}.cal button:hover{transform:translateY(-3px)}
+.cal b{display:block;font-size:.95rem}.cal .e{color:var(--mut);opacity:.55}.cal .td{outline:2px solid var(--g2)}
+@media(max-width:560px){.cal button,.cal .e{min-height:48px;font-size:.62rem;padding:4px}}
+.ov{position:fixed;inset:0;z-index:50;display:none;place-items:center;background:rgba(8,8,20,.5);backdrop-filter:blur(6px);padding:20px}.ov.on{display:grid}
+.modal{width:min(440px,100%);padding:22px;animation:up .35s both}
+.modal h3{font-size:1.3rem;display:flex;justify-content:space-between;align-items:center}
+.modal dl{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;margin:14px 0;font-size:.9rem}.modal dt{color:var(--mut)}
+.tl{display:flex;gap:4px}.tl i{flex:1;height:26px;border-radius:6px;background:color-mix(in srgb,var(--c) 45%,transparent)}
+footer{color:var(--mut);font-size:.8rem;padding:24px 0 40px;text-align:center}
+:focus-visible{outline:2px solid var(--g1);outline-offset:2px}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* ---------- 3D map, countdown, squad ---------- */
+.m3{align-items:stretch}
+.m3wrap{padding:14px 14px 16px;overflow:hidden}
+.m3stage{position:relative;height:clamp(420px,68vw,560px);overflow:hidden}
+.m3scene{position:absolute;left:50%;top:80%;width:410px;height:110px;transform-style:preserve-3d;transform:translate(-50%,-50%) scale(var(--k,1)) rotateX(58deg) rotateZ(-38deg)}
+.m3plate{position:absolute;left:0;top:0;width:410px;height:110px;border-radius:12px;transform-style:preserve-3d;transform:translateZ(calc(var(--i)*80px));background:color-mix(in srgb,var(--ink) 7%,transparent);border:1px solid var(--line)}
+.m3lab{position:absolute;left:-8px;top:50%;width:70px;text-align:right;font-size:.78rem;font-weight:700;color:var(--mut);transform:translate(-100%,-50%) rotateZ(38deg) rotateX(-58deg);transform-origin:right center;white-space:nowrap}
+.blk{position:absolute;top:24px;width:64px;height:64px;transform-style:preserve-3d;cursor:pointer;outline:none}
+.blk .lift{position:absolute;inset:0;transform-style:preserve-3d;transition:transform .25s cubic-bezier(.16,1,.3,1)}
+.blk:hover .lift,.blk:focus-visible .lift{transform:translateZ(10px)}
+.blk.sel .lift{transform:translateZ(16px)}
+.blk .f{position:absolute;border:1px solid rgba(255,255,255,.28)}
+.blk .t{inset:0;transform:translateZ(24px);background:color-mix(in srgb,var(--c) 66%,var(--bg));transform-style:preserve-3d;display:grid;place-items:center}
+.blk .fr{left:0;top:100%;width:64px;height:24px;transform-origin:top;transform:rotateX(90deg);background:color-mix(in srgb,var(--c) 72%,#000)}
+.blk .lf{left:-24px;top:0;width:24px;height:64px;transform-origin:right;transform:rotateY(90deg);background:color-mix(in srgb,var(--c) 52%,#000)}
+.blk .t span{font-size:.66rem;font-weight:800;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.55);transform:translateZ(1px) rotateZ(38deg) rotateX(-58deg);white-space:nowrap}
+.blk.sel .t{box-shadow:0 0 0 3px var(--g2),0 0 22px var(--g2)}
+.m3hint{position:absolute;left:12px;bottom:6px;font-size:.75rem;color:var(--mut)}
+.m3big{font-size:clamp(2.2rem,6vw,3rem);font-weight:800;letter-spacing:-.03em;line-height:1.05;font-variant-numeric:tabular-nums;margin:10px 0 2px}
+.m3lbl{font-size:.86rem;color:var(--mut)}
+.m3msg{margin:14px 0 10px;padding:12px 14px;border-radius:14px;border:1px dashed var(--line);font-size:.9rem}
+.wa{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;border:0;border-radius:12px;padding:12px 16px;font-weight:800;color:#fff;background:#1fa855;box-shadow:0 6px 18px rgba(31,168,85,.4)}
+.wa:hover{filter:brightness(1.07)}
+.m3act{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}.m3act .btn{flex:1}
+.m3pill{display:inline-flex;align-items:center;gap:6px;font-size:.8rem;font-weight:700;padding:3px 11px;border-radius:999px;border:1px solid color-mix(in srgb,var(--c) 60%,var(--line));background:color-mix(in srgb,var(--c) 16%,transparent)}
+</style>
+</head>
+<body>
+<header class="top glass">
+  <div class="brand"><div class="mark"></div>Floor Manager</div>
+  <span class="pill"><i class="live"></i><span id="clock">Live</span></span>
+  <select id="day" aria-label="Day"></select>
+  <select id="time" aria-label="Time"></select>
+  <button class="btn" id="theme">Theme</button>
+</header>
+
+<main class="wrap">
+  <div class="hero">
+    <div>
+      <h1 class="in">Find an empty room in seconds</h1>
+      <p class="sub in" style="--i:1">Ask in plain English. We check every timetable and rank the rooms that stay free for as long as you need.</p>
+      <div class="search glass in" style="--i:2">
+        <input id="q" placeholder="I need an AC room on the ground floor for 2 hours" aria-label="Describe the room you need">
+        <button class="go" id="go">Find rooms</button>
+      </div>
+      <div class="chips in" style="--i:3" id="chips"></div>
+      <div class="stats" id="stats"></div>
+    </div>
+    <div class="map glass in" style="--i:2"><h3>Live floor map</h3><div id="map"></div>
+      <div class="legend"><span class="ok"><i></i>Available</span><span class="bad"><i></i>Occupied</span><span class="soon"><i></i>Reserved soon</span><span class="rec"><i></i>Recommended</span></div></div>
+  </div>
+
+  <div class="feat">
+    <div class="glass in" style="--i:4"><b>Real-time availability</b><span>Status follows the clock and your timetable data.</span></div>
+    <div class="glass in" style="--i:5"><b>Natural language search</b><span>Duration, floor, features and time, all from one sentence.</span></div>
+    <div class="glass in" style="--i:6"><b>Vacancy prediction</b><span>See which rooms will stay empty the longest.</span></div>
+  </div>
+
+
+  <section id="map3d">
+    <h2>3D building map</h2>
+    <div class="two m3">
+      <div class="glass m3wrap">
+        <div class="m3stage" id="m3stage"><div class="m3scene" id="m3scene"></div><div class="m3hint">Tap any room block</div></div>
+        <div class="legend"><span class="ok"><i></i>Available</span><span class="bad"><i></i>Occupied</span><span class="soon"><i></i>Reserved soon</span><span class="rec"><i></i>Recommended / yours</span></div>
+      </div>
+      <div class="glass panel" id="m3panel"></div>
+    </div>
+  </section>
+
+  <section id="find">
+    <h2>AI room finder</h2>
+    <div class="two">
+      <div class="glass panel" id="ai"></div>
+      <div class="glass panel"><b>Likely to stay vacant longest</b><div id="pred" style="margin-top:8px"></div></div>
+    </div>
+  </section>
+
+  <section id="floors">
+    <h2>Floors</h2>
+    <div class="filters glass">
+      <select id="f-floor" aria-label="Floor"></select>
+      <label>Min seats <select id="f-cap"><option value="0">Any</option><option>20</option><option>30</option><option>40</option><option>60</option></select></label>
+      <label><input type="checkbox" id="f-ac"> AC only</label>
+      <label><input type="checkbox" id="f-proj"> Projector</label>
+      <label>Free for <select id="f-dur"><option value="1">1 period</option><option value="2">2 periods</option><option value="3">3 periods</option><option value="4">4 periods</option></select></label>
+      <label><input type="checkbox" id="f-avail"> Only rooms free for that long</label>
+      <label class="btn">Load dataset (JSON)<input type="file" id="up" accept=".json" hidden></label>
+    </div>
+    <div id="floorGrid"></div>
+  </section>
+
+  <section id="analytics">
+    <h2>Analytics</h2>
+    <div class="ana" id="ana"></div>
+  </section>
+  <footer>Timetables: SEEE odd semester 2026-27, 50-minute periods. Room details other than location are placeholders. Use "Load dataset" to swap in another file.</footer>
+</main>
+
+<div class="ov" id="ov"><div class="modal glass" id="modal"></div></div>
+
+<script>
+let D = {
+  rooms: [
+    { id:"IST 101", floor:"Ground", ac:true, capacity:60, projector:true, wifi:true },
+    { id:"IST 102", floor:"Ground", ac:true, capacity:30, projector:false, wifi:true },
+    { id:"IST 104", floor:"Ground", ac:true, capacity:20, projector:true, wifi:true },
+    { id:"IST 107", floor:"Ground", ac:true, capacity:25, projector:true, wifi:true },
+    { id:"IST 108", floor:"Ground", ac:false, capacity:30, projector:false, wifi:true },
+    { id:"IST 211", floor:"2nd", ac:false, capacity:60, projector:true, wifi:false },
+    { id:"IST 225", floor:"2nd", ac:false, capacity:60, projector:true, wifi:false },
+    { id:"IST 227", floor:"2nd", ac:false, capacity:60, projector:true, wifi:true },
+    { id:"IST 309", floor:"3rd", ac:false, capacity:30, projector:false, wifi:true },
+    { id:"IST 401", floor:"4th", ac:false, capacity:60, projector:true, wifi:true },
+    { id:"IST 411", floor:"4th", ac:false, capacity:60, projector:true, wifi:true },
+    { id:"IST 416", floor:"4th", ac:false, capacity:60, projector:true, wifi:true },
+    { id:"IST 518", floor:"5th", ac:false, capacity:60, projector:true, wifi:true },
+    { id:"IST 519", floor:"5th", ac:false, capacity:60, projector:true, wifi:true },
+    { id:"IST 602", floor:"6th", ac:true, capacity:80, projector:true, wifi:true },
+    { id:"IST 618", floor:"6th", ac:true, capacity:40, projector:true, wifi:true },
+    { id:"IST 625", floor:"6th", ac:false, capacity:60, projector:true, wifi:true }
+  ],
+  // Odd Semester 2026-27. Tokens per period 1-9: V = section's own room, . = no IST room used, 107+309 = those rooms (labs or slot rooms)
+  tt: {
+    "II BME": { v:"IST 602", grid:{
+      Monday:"V V V V . 107+309 107+309 . .", Tuesday:"V V V V . . . . .", Wednesday:"V V V . . . V . .",
+      Thursday:"V V V V . . . 107+309 107+309", Friday:"V V V V . . . V V" } },
+    "II ECE-DS A": { v:"IST 416", grid:{
+      Monday:"V V V V . 602 602 309+107 309+107", Tuesday:"V V V V . 602 . . .", Wednesday:"V V V V . . . . .",
+      Thursday:"V V V V . 309+107 309+107 . .", Friday:"V V V V . . . . ." } },
+    "II ECE-DS B": { v:"IST 411", grid:{
+      Monday:". . 309+107 309+107 . V V V V", Tuesday:"309+107 309+107 . . . V V V V", Wednesday:"401 . . . . V V V V",
+      Thursday:"401 401 . . . V V V V", Friday:". . . . . V V V V" } },
+    "III BME": { v:"IST 211", grid:{
+      Monday:"625 625 107 107 . V V V V", Tuesday:"108 108 625 . . V V V V", Wednesday:". . . . . V V V V",
+      Thursday:". . . 108 . V V V V", Friday:"108 . . . . V V V V" } },
+    "III ECE-A": { v:"IST 518", grid:{
+      Monday:"V V V V . 625 625 . .", Tuesday:"V V V V . . 625 . .", Wednesday:"V V V V . . . 108+309 108+309",
+      Thursday:"V V V V . . . . .", Friday:"V V V V . 108+309 108+309 . ." } },
+    "III ECE-B": { v:"IST 518", grid:{
+      Monday:"108+309 108+309 . . . V V V V", Tuesday:"625 625 . . . V V V V", Wednesday:"625 . . . . V V V V",
+      Thursday:"108+309 108+309 . . . V V V V", Friday:". . . . . V V V V" } },
+    "III ECE-DS": { v:"IST 519", grid:{
+      Monday:"V V V V . . . . .", Tuesday:"V V V V . 108+107 108+107 . .", Wednesday:"V V V V . . . 625 625",
+      Thursday:"V V V V . . . . .", Friday:"V V V V . 625 . 108+107 108+107" } },
+    "IV ECE-A": { v:"IST 225", grid:{
+      Monday:"V . V V . . . . .", Tuesday:"V V V V . . . . .", Wednesday:"V 108 V V . . . . .",
+      Thursday:"V V V V . . . . .", Friday:"V V V V . . . . ." } },
+    "IV ECE-B": { v:"IST 227", grid:{
+      Monday:"V V V V . . . . .", Tuesday:"V V V V . . . . .", Wednesday:"V V V V . . . . .",
+      Thursday:"V V 108 V . . . . .", Friday:"V V V . . . . . ." } }
+  }
+};
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => '&#' + c.charCodeAt(0) + ';');
+const PT = ['9:00 AM', '9:50 AM', '10:50 AM', '11:40 AM', '12:30 PM', '1:20 PM', '2:10 PM', '3:10 PM', '4:00 PM', '4:50 PM'];
+const PM = [540, 590, 650, 700, 750, 800, 850, 910, 960, 1010];
+const lbl = s => PT[Math.min(9, Math.max(0, s))];
+const slotOf = h => { const m = h * 60; let k = 0; PM.forEach((t, i) => { if (m >= t) k = i; }); return k; };
+const floors = () => [...new Set(D.rooms.map(r => r.floor))];
+const fname = f => f === 'Ground' ? 'Ground floor' : f + ' floor';
+const days = () => [...new Set(Object.values(D.tt).flatMap(c => Object.keys(c.grid)))];
+const S = { day: 'Monday', slot: 0, live: true, loading: true, ai: null, month: new Date(new Date().getFullYear(), new Date().getMonth(), 1) };
+
+function liveNow() {
+  const d = new Date(), name = d.toLocaleDateString('en-US', { weekday: 'long' });
+  S.day = days().includes(name) ? name : days()[0];
+  S.slot = Math.min(8, slotOf(d.getHours() + d.getMinutes() / 60));
+}
+
+function occ(r, day, s) {
+  for (const k in D.tt) {
+    const c = D.tt[k], g = c.grid[day]; if (!g) continue;
+    const t = (Array.isArray(g) ? g : g.split(' '))[s];
+    if (!t || t === '.') continue;
+    if (t === 'V' ? c.v === r.id : t.split('+').some(n => 'IST ' + n === r.id)) return k;
+  }
+  return null;
+}
+function freeRun(r, day, s) { let n = 0; while (s + n < 9 && !occ(r, day, s + n)) n++; return n; }
+function status(r) {
+  const o = occ(r, S.day, S.slot);
+  if (o) return { k: 'bad', t: 'Occupied', by: o };
+  for (let i = 1; i <= 2 && S.slot + i < 9; i++) if (occ(r, S.day, S.slot + i)) return { k: 'soon', t: 'Reserved soon' };
+  return { k: 'ok', t: 'Available' };
+}
+const recIds = () => new Set(S.ai && S.ai.res ? S.ai.res.map(x => x.r.id) : []);
+function view(r) {
+  const s = status(r);
+  if (s.k !== 'bad' && recIds().has(r.id)) return { ...s, k: 'rec', t: 'Recommended' };
+  return s;
+}
+
+/* ---------- AI: understand the request, then rank rooms ---------- */
+async function getSample() { try { return typeof claude !== 'undefined' ? await claude.use('sample') : null; } catch (e) { return null; } }
+const FW = { second: '2nd', fourth: '4th', fifth: '5th', sixth: '6th', ground: 'Ground' };
+function localParse(q) {
+  q = q.toLowerCase();
+  const p = { floor: null, ac: null, minCapacity: null, projector: null, wifi: null, durationHours: null, startHour: null, endHour: null, quiet: /quiet|silent|peace/.test(q) };
+  if (/non[- ]?ac/.test(q)) p.ac = false; else if (/\bac\b|air.?condition/.test(q)) p.ac = true;
+  if (/projector/.test(q)) p.projector = true;
+  if (/wi-?fi/.test(q)) p.wifi = true;
+  let m = q.match(/(\d+)\s*(hour|hr)/); if (m) p.durationHours = +m[1];
+  m = q.match(/(\d+)\s*(student|people|person|seat)/); if (m) p.minCapacity = +m[1];
+  for (const f of floors()) if (q.includes(f.toLowerCase())) p.floor = f;
+  for (const w in FW) if (q.includes(w) && floors().includes(FW[w])) p.floor = FW[w];
+  const t = [...q.matchAll(/(\d{1,2})(?::\d\d)?\s*(am|pm)/g)].map(x => (+x[1] % 12) + (x[2] === 'pm' ? 12 : 0));
+  if (t[0] != null) p.startHour = t[0];
+  if (t[1] != null) p.endHour = t[1];
+  return p;
+}
+function rank(p) {
+  const s0 = p.startHour != null ? slotOf(p.startHour) : S.slot;
+  const dur = p.durationHours || (p.endHour != null && p.startHour != null ? Math.max(1, slotOf(p.endHour) - slotOf(p.startHour)) : 1) || 1;
+  return D.rooms.map(r => {
+    const run = freeRun(r, S.day, s0);
+    if (run < dur) return null;
+    let c = 100;
+    if (p.floor && r.floor !== p.floor) c -= 25;
+    if (p.ac != null && r.ac !== p.ac) c -= 30;
+    if (p.projector && !r.projector) c -= 20;
+    if (p.wifi && !r.wifi) c -= 15;
+    if (p.minCapacity) { if (r.capacity < p.minCapacity) c -= 40; else c -= Math.min(8, (r.capacity - p.minCapacity) / 10); }
+    if (p.quiet && r.capacity > 40) c -= 6;
+    c += Math.min(run - dur, 4) * 0.5;
+    return { r, run, s0, dur, c: Math.max(0, Math.min(99, Math.round(c))) };
+  }).filter(x => x && x.c >= 50).sort((a, b) => b.c - a.c || b.run - a.run).slice(0, 5);
+}
+async function ask(text) {
+  if (!text.trim()) return;
+  $('q').value = text; S.ai = { loading: true }; render();
+  let p = null, src = 'Built-in parser';
+  const sm = await getSample();
+  if (sm) {
+    try {
+      p = await sm.json('Extract room-search requirements from the student request. Return only JSON: {"floor":"one of ' + floors().join('|') + ' or null","ac":true|false|null,"minCapacity":number|null,"projector":true|false|null,"wifi":true|false|null,"durationHours":number|null,"startHour":0-23 or null,"endHour":0-23 or null,"quiet":true|false}. "after 4 PM" means startHour 16. Request: ' + text, { cache: false });
+      src = 'Understood by Claude';
+    } catch (e) { p = null; }
+  }
+  if (!p) p = localParse(text);
+  S.ai = { q: text, p, src, res: rank(p) }; render();
+  $('find').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+/* ---------- Rendering ---------- */
+function renderStats() {
+  const av = D.rooms.filter(r => !occ(r, S.day, S.slot)).length, tot = D.rooms.length;
+  $('stats').innerHTML = [[av, 'Available now'], [tot - av, 'Occupied'], [tot, 'Total rooms']]
+    .map((x, i) => `<div class="stat glass in" style="--i:${i + 4}"><b>${x[0]}</b><span>${x[1]}</span></div>`).join('');
+}
+function renderMap() {
+  $('map').innerHTML = floors().slice().reverse().map(f => `<div class="mrow"><small>${esc(f)}</small>${D.rooms.filter(r => r.floor === f)
+    .map((r, i) => `<div class="cell ${view(r).k}" title="${esc(r.id)}" style="animation-delay:${i * 200}ms"></div>`).join('')}</div>`).join('');
+}
+function renderAI() {
+  const a = S.ai, box = $('ai');
+  if (!a) { box.innerHTML = '<b>Recommended rooms</b><p class="muted" style="margin-top:8px">Describe what you need above, or tap a quick search.</p>'; return; }
+  if (a.loading) { box.innerHTML = '<b>Understanding your request...</b><div class="skel" style="margin-top:12px"></div><div class="skel" style="margin-top:10px"></div>'; return; }
+  const p = a.p, ch = [];
+  if (p.floor) ch.push(fname(p.floor)); if (p.ac != null) ch.push(p.ac ? 'AC' : 'Non-AC');
+  if (p.minCapacity) ch.push(p.minCapacity + '+ seats'); if (p.projector) ch.push('Projector'); if (p.wifi) ch.push('Wi-Fi');
+  if (p.durationHours) ch.push(p.durationHours + ' hours'); if (p.startHour != null) ch.push('from ' + lbl(slotOf(p.startHour)));
+  if (p.endHour != null) ch.push('until ' + lbl(slotOf(p.endHour))); if (p.quiet) ch.push('Quiet (smaller rooms)');
+  box.innerHTML = `<b>Recommended rooms</b><div class="parsed">${ch.map(c => `<span>${esc(c)}</span>`).join('')}<span>${a.src}</span></div>` +
+    (a.res.length ? a.res.map((x, i) => `<div class="res glass in" style="--i:${i}"><div class="r1"><span>Room ${esc(x.r.id)}</span><span class="conf">${x.c}% match</span></div><ul>
+      <li>${fname(x.r.floor)}</li><li>${x.r.ac ? 'AC available' : 'Non-AC'}, capacity ${x.r.capacity}${x.r.projector ? ', projector' : ''}${x.r.wifi ? ', Wi-Fi' : ''}</li>
+      <li>Free for ${x.run} period${x.run > 1 ? 's' : ''}, from ${lbl(x.s0)} to ${lbl(x.s0 + x.run)}</li></ul></div>`).join('')
+      : '<p class="muted">No room is free for the whole time you asked. Try a shorter duration or a different time.</p>');
+}
+function renderPred() {
+  const list = D.rooms.map(r => ({ r, run: freeRun(r, S.day, S.slot) })).filter(x => x.run > 0).sort((a, b) => b.run - a.run).slice(0, 5);
+  $('pred').innerHTML = list.length ? list.map(x => `<div class="pred"><span>${esc(x.r.id)}</span><span class="muted">${x.run >= 9 - S.slot ? 'Free all day' : 'Free until ' + lbl(S.slot + x.run)}</span></div>`).join('')
+    : '<p class="muted">Every room is in use right now.</p>';
+}
+function passes(r) {
+  const F = { floor: $('f-floor').value, cap: +$('f-cap').value, dur: +$('f-dur').value };
+  return (F.floor === 'All' || r.floor === F.floor) && r.capacity >= F.cap && (!$('f-ac').checked || r.ac) && (!$('f-proj').checked || r.projector)
+    && (!$('f-avail').checked || freeRun(r, S.day, S.slot) >= F.dur);
+}
+function renderFloors() {
+  if (S.loading) { $('floorGrid').innerHTML = '<div class="rooms">' + '<div class="skel"></div>'.repeat(8) + '</div>'; return; }
+  let n = 0;
+  $('floorGrid').innerHTML = floors().map(f => {
+    const rs = D.rooms.filter(r => r.floor === f && passes(r)); if (!rs.length) return '';
+    return `<div class="floor"><h3>${fname(f)} <small>${rs.length} room${rs.length > 1 ? 's' : ''}</small></h3><div class="rooms">${rs.map(r => {
+      const v = view(r);
+      return `<button class="room ${v.k} in" style="--i:${n++}" data-id="${esc(r.id)}"><b><i class="dot"></i>${esc(r.id)}</b><small>${v.t}</small>
+        <div class="tags"><span>${r.ac ? 'AC' : 'Non-AC'}</span><span>${r.capacity} seats</span>${r.projector ? '<span>Projector</span>' : ''}${r.wifi ? '<span>Wi-Fi</span>' : ''}</div></button>`;
+    }).join('')}</div></div>`;
+  }).join('') || '<p class="muted">No rooms match these filters.</p>';
+}
+function renderAna() {
+  const perSlot = [...Array(9)].map((_, s) => D.rooms.filter(r => occ(r, S.day, s)).length), max = Math.max(1, ...perSlot);
+  const used = D.rooms.map(r => ({ id: r.id, n: days().reduce((t, d) => t + [...Array(9)].filter((_, s) => occ(r, d, s)).length, 0) })).sort((a, b) => b.n - a.n).slice(0, 5);
+  const um = Math.max(1, used[0] ? used[0].n : 1);
+  const fl = floors().map(f => { const rs = D.rooms.filter(r => r.floor === f); return { f, u: Math.round(100 * rs.reduce((t, r) => t + [...Array(9)].filter((_, s) => occ(r, S.day, s)).length, 0) / (rs.length * 9)) }; });
+  $('ana').innerHTML = `<div class="glass panel"><b>Peak occupancy hours</b><p class="muted">${S.day}, rooms in use by period</p><div class="bars" style="margin-top:12px">${perSlot.map((n, s) => `<div><i style="height:${Math.round(n / max * 100)}px"></i>${s + 1}</div>`).join('')}</div></div>
+    <div class="glass panel"><b>Most used rooms</b><p class="muted">Class periods across the week</p>${used.map(u => `<div class="hb">${esc(u.id)} <span class="muted">${u.n} periods</span><i style="width:${Math.max(3, u.n / um * 100)}%"></i></div>`).join('')}</div>
+    <div class="glass panel"><b>Floor utilization</b><p class="muted">${S.day}</p>${fl.map(x => `<div class="hb">${fname(x.f)} <span class="muted">${x.u}%</span><i style="width:${Math.max(3, x.u)}%"></i></div>`).join('')}</div>`;
+}
+const util = d => {
+  if (!days().includes(d)) return null;
+  const n = D.rooms.reduce((t, r) => t + [...Array(9)].filter((_, s) => occ(r, d, s)).length, 0);
+  return Math.round(100 * n / (D.rooms.length * 9));
+};
+function renderMonth() {
+  const m = S.month, y = m.getFullYear(), mo = m.getMonth(), first = (m.getDay() + 6) % 7, n = new Date(y, mo + 1, 0).getDate(), now = new Date();
+  let cells = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(x => `<div class="dn">${x}</div>`).join('') + '<div></div>'.repeat(first);
+  for (let d = 1; d <= n; d++) {
+    const name = new Date(y, mo, d).toLocaleDateString('en-US', { weekday: 'long' }), u = util(name);
+    const td = now.getFullYear() === y && now.getMonth() === mo && now.getDate() === d ? ' td' : '';
+    cells += u == null ? `<div class="e${td}"><b>${d}</b>No timetable</div>`
+      : `<button class="${td}" data-d="${name}" style="background:color-mix(in srgb,var(--g1) ${Math.round(8 + u * 0.6)}%,transparent)"><b>${d}</b>${u}% used</button>`;
+  }
+  $('ana').insertAdjacentHTML('beforeend', `<div class="glass panel mon"><div class="mh"><div><b>Month view</b><span class="muted">${m.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</span></div>
+    <div><button class="btn" data-m="-1" aria-label="Previous month">Prev</button><button class="btn" data-m="1" aria-label="Next month">Next</button></div></div>
+    <p class="muted" style="margin-bottom:10px">Room usage per day, projected from the weekly timetable. Darker means busier. Tap a day to see its rooms.</p><div class="cal">${cells}</div></div>`);
+}
+function render() {
+  renderStats(); renderMap(); renderAI(); renderPred(); renderFloors(); renderAna(); renderMonth(); render3D();
+  $('clock').textContent = (S.live ? 'Live, ' : '') + S.day + ' ' + lbl(S.slot);
+  $('day').value = S.day; $('time').value = S.live ? 'live' : S.slot;
+}
+function showRoom(id) {
+  const r = D.rooms.find(x => x.id === id), v = view(r), run = freeRun(r, S.day, S.slot);
+  $('modal').innerHTML = `<h3>Room ${esc(r.id)} <span class="pill ${v.k}"><i class="dot"></i>${v.t}</span></h3>
+    <dl><dt>Floor</dt><dd>${fname(r.floor)}</dd><dt>Capacity</dt><dd>${r.capacity} seats</dd><dt>Climate</dt><dd>${r.ac ? 'AC' : 'Non-AC'}</dd>
+    <dt>Projector</dt><dd>${r.projector ? 'Yes' : 'No'}</dd><dt>Wi-Fi</dt><dd>${r.wifi ? 'Yes' : 'No'}</dd>
+    <dt>Now</dt><dd>${v.by ? 'In use by ' + esc(v.by) : run >= 9 - S.slot ? 'Free for the rest of the day' : 'Free until ' + lbl(S.slot + run)}</dd></dl>
+    <div class="muted" style="margin-bottom:6px">${S.day}, 9:00 AM to 4:50 PM</div>
+    <div class="tl">${[...Array(9)].map((_, s) => `<i class="${occ(r, S.day, s) ? 'bad' : 'ok'}" title="${lbl(s)}"></i>`).join('')}</div>
+    <button class="go" style="margin-top:18px;width:100%" onclick="$('ov').classList.remove('on')">Close</button>`;
+  $('ov').classList.add('on');
+}
+
+/* ---------- Setup ---------- */
+function initControls() {
+  $('day').innerHTML = days().map(d => `<option>${d}</option>`).join('');
+  $('time').innerHTML = '<option value="live">Live (now)</option>' + [...Array(9)].map((_, s) => `<option value="${s}">${lbl(s)}</option>`).join('');
+  $('f-floor').innerHTML = '<option value="All">All floors</option>' + floors().map(f => `<option value="${esc(f)}">${fname(f)}</option>`).join('');
+  $('chips').innerHTML = ['AC room for 2 hours', 'Room for 15 students with a projector', 'Rooms available after 4 PM', 'Quiet room on the ground floor']
+    .map(t => `<button class="chip" data-q="${esc(t)}">${esc(t)}</button>`).join('');
+}
+$('go').onclick = () => ask($('q').value);
+$('q').onkeydown = e => { if (e.key === 'Enter') ask($('q').value); };
+$('chips').onclick = e => { const b = e.target.closest('[data-q]'); if (b) ask(b.dataset.q); };
+$('floorGrid').onclick = e => { const b = e.target.closest('.room'); if (b) showRoom(b.dataset.id); };
+$('ov').onclick = e => { if (e.target.id === 'ov') $('ov').classList.remove('on'); };
+$('day').onchange = e => { S.day = e.target.value; S.live = false; S.ai = null; render(); };
+$('time').onchange = e => { if (e.target.value === 'live') { S.live = true; liveNow(); } else { S.live = false; S.slot = +e.target.value; } render(); };
+document.querySelector('.filters').addEventListener('input', e => { if (e.target.id !== 'up') renderFloors(); });
+$('theme').onclick = () => {
+  const r = document.documentElement, dark = r.dataset.theme ? r.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+  r.dataset.theme = dark ? 'light' : 'dark';
+};
+$('ana').onclick = e => {
+  const m = e.target.closest('[data-m]');
+  if (m) { S.month = new Date(S.month.getFullYear(), S.month.getMonth() + +m.dataset.m, 1); renderAna(); renderMonth(); return; }
+  const d = e.target.closest('[data-d]');
+  if (d) { S.day = d.dataset.d; S.live = false; S.ai = null; render(); $('floors').scrollIntoView({ behavior: 'smooth' }); }
+};
+$('up').onchange = e => {
+  const f = e.target.files[0]; if (!f) return;
+  const rd = new FileReader();
+  rd.onload = () => {
+    try {
+      const j = JSON.parse(rd.result);
+      if (!Array.isArray(j.rooms) || !j.timetable) throw 0;
+      D = { rooms: j.rooms, tt: j.timetable }; S.ai = null; initControls(); if (S.live) liveNow(); render();
+    } catch (x) { alert('Could not read that file. Expected {"rooms":[...], "timetable":{section:{v, grid}}} in the same shape as the built-in data.'); }
+  };
+  rd.readAsText(f);
+};
+
+/* ---------- 3D map, countdown timer, Call the Squad ---------- */
+const fmtMin = m => { m = Math.round(m); let h = Math.floor(m / 60), mi = m % 60; const ap = h >= 12 ? 'PM' : 'AM'; h = h % 12 || 12; return h + ':' + String(mi).padStart(2, '0') + ' ' + ap; };
+const DAY_END = PM[9] + 50;
+const M3 = { sel: null, claimed: null, base: null, key: '' };
+function nowSec() {
+  const k = S.live + '|' + S.day + '|' + S.slot;
+  if (M3.key !== k) { M3.key = k; M3.base = { t: Date.now(), s: PM[S.slot] * 60 }; }
+  if (S.live) { const d = new Date(); return d.getHours() * 3600 + d.getMinutes() * 60 + d.getSeconds(); }
+  return M3.base.s + (Date.now() - M3.base.t) / 1000;
+}
+/* Clock state for one room: occupied -> counts down to end of class; free -> counts down to next class start */
+function roomClock(r) {
+  const nm = nowSec() / 60;
+  if (nm >= DAY_END) return { over: true, target: DAY_END * 60, until: DAY_END, txt: 'Classes are over for today' };
+  let s = -1; for (let i = 0; i < 9; i++) if (PM[i] <= nm) s = i;
+  if (s >= 0 && nm < PM[s] + 50 && occ(r, S.day, s)) {
+    let e = s; while (e + 1 < 9 && occ(r, S.day, e + 1)) e++;
+    let n = null; for (let i = e + 1; i < 9; i++) if (occ(r, S.day, i)) { n = i; break; }
+    return { busy: true, by: occ(r, S.day, s), target: (PM[e] + 50) * 60, until: PM[e] + 50, nextStart: n == null ? null : PM[n] };
+  }
+  for (let i = 0; i < 9; i++) if (PM[i] > nm && occ(r, S.day, i)) return { target: PM[i] * 60, until: PM[i] };
+  return { rest: true, target: DAY_END * 60, until: DAY_END };
+}
+const cd = sec => {
+  sec = Math.max(0, Math.ceil(sec)); const h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), x = sec % 60, z = n => String(n).padStart(2, '0');
+  return h ? h + ':' + z(m) + ':' + z(x) : z(m) + ':' + z(x);
+};
+function m3Kind(r) {
+  if (M3.claimed === r.id) return 'rec';
+  if (roomClock(r).over) return 'ok';
+  return view(r).k;
+}
+function fitM3() {
+  const st = $('m3stage'); if (!st) return;
+  $('m3scene').style.setProperty('--k', Math.min(.92, Math.max(.5, st.clientWidth / 560)));
+}
+function render3D() {
+  const fl = floors();
+  $('m3scene').innerHTML = fl.map((f, i) => `<div class="m3plate" style="--i:${i}"><div class="m3lab">${fname(f)}</div>${D.rooms.filter(r => r.floor === f).map((r, j) => {
+    const k = m3Kind(r);
+    return `<div class="blk ${k}${M3.sel === r.id ? ' sel' : ''}" role="button" tabindex="0" data-id="${esc(r.id)}" aria-label="${esc(r.id)}, ${k}" style="left:${12 + j * 78}px"><div class="lift"><div class="f lf"></div><div class="f fr"></div><div class="f t"><span>${esc(r.id.replace('IST ', ''))}</span></div></div></div>`;
+  }).join('')}</div>`).join('');
+  fitM3(); renderM3Panel();
+}
+function renderM3Panel() {
+  const box = $('m3panel');
+  if (!M3.sel) { box.innerHTML = '<b>Room timer</b><p class="muted" style="margin-top:8px">Pick a room on the 3D map to see a live countdown to its next class, claim it, and call your friends over.</p>'; return; }
+  const r = D.rooms.find(x => x.id === M3.sel); if (!r) { M3.sel = null; return renderM3Panel(); }
+  const c = roomClock(r), k = m3Kind(r), mine = M3.claimed === r.id;
+  const until = fmtMin(c.until);
+  let head, sub;
+  if (c.over) { head = 'Classes done'; sub = 'No more classes today. Free until closing.'; }
+  else if (c.busy) { head = 'In use by ' + esc(c.by); sub = 'Class ends in' + (c.nextStart != null ? '. Next class here starts at ' + fmtMin(c.nextStart) : '. No more classes after this'); }
+  else if (c.rest) { head = 'Free for the rest of the day'; sub = 'Time left until ' + until; }
+  else { head = 'Free right now'; sub = 'Until the next class starts at ' + until; }
+  const msg = `📍 Heading to ${r.id}. It's free until ${until}. Come fast!`;
+  box.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><b style="font-size:1.2rem">Room ${esc(r.id)}</b><span class="m3pill ${k}"><i class="dot"></i>${mine ? 'Claimed by you' : c.over ? 'Available' : view(r).t}</span></div>
+    <p class="muted">${fname(r.floor)}, ${r.capacity} seats, ${r.ac ? 'AC' : 'Non-AC'}${r.projector ? ', projector' : ''}</p>
+    <div style="margin-top:14px;font-weight:700">${head}</div>
+    <div class="m3big" id="m3t" data-target="${c.target}">${cd(c.target - nowSec())}</div>
+    <div class="m3lbl">${sub}</div>
+    ${mine ? `<div class="m3msg">${esc(msg)}</div>
+      <button class="wa" id="m3call">📣 Call the Squad on WhatsApp</button>
+      <div class="m3act"><button class="btn" id="m3copy">Copy message</button><button class="btn" id="m3rel">Release room</button></div>`
+      : c.busy ? '<p class="muted" style="margin-top:16px">This room is occupied, so it cannot be claimed yet.</p>'
+      : '<button class="go" id="m3claim" style="width:100%;margin-top:18px">Claim this room</button>'}`;
+}
+function m3Select(id) { M3.sel = id; render3D(); if (matchMedia('(max-width:860px)').matches) $('m3panel').scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
+function m3Msg() {
+  const r = D.rooms.find(x => x.id === M3.claimed); if (!r) return '';
+  return `📍 Heading to ${r.id}. It's free until ${fmtMin(roomClock(r).until)}. Come fast!`;
+}
+$('m3scene').addEventListener('click', e => { const b = e.target.closest('.blk'); if (b) m3Select(b.dataset.id); });
+$('m3scene').addEventListener('keydown', e => { const b = e.target.closest('.blk'); if (b && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); m3Select(b.dataset.id); } });
+$('m3panel').addEventListener('click', e => {
+  const id = e.target.id;
+  if (id === 'm3claim') { M3.claimed = M3.sel; render3D(); }
+  else if (id === 'm3rel') { M3.claimed = null; render3D(); }
+  else if (id === 'm3call') { window.open('https://wa.me/?text=' + encodeURIComponent(m3Msg()), '_blank', 'noopener'); }
+  else if (id === 'm3copy') { const t = m3Msg(); (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => { e.target.textContent = 'Copied'; }, () => { e.target.textContent = 'Copy not allowed here'; }); }
+});
+addEventListener('resize', fitM3);
+setInterval(() => {
+  const t = $('m3t'); if (!t) return;
+  const left = +t.dataset.target - nowSec();
+  if (left <= 0) { if (M3.claimed && roomClock(D.rooms.find(x => x.id === M3.claimed) || D.rooms[0]).busy) M3.claimed = null; render3D(); }
+  else t.textContent = cd(left);
+}, 1000);
+
+initControls(); liveNow(); render();
+setTimeout(() => { S.loading = false; render(); }, 700);
+setInterval(() => { if (S.live) { liveNow(); render(); } }, 30000);
+</script>
+</body>
+</html>
